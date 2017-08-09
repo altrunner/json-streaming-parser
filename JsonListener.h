@@ -55,6 +55,7 @@ class JsonListener {
     virtual void startObject() = 0;
 
     virtual void error( const char *message ) = 0;
- 
+
+    virtual ~JsonListener() {}
 };
 

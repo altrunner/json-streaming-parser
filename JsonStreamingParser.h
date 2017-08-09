@@ -86,54 +86,43 @@ class JsonStreamingParser {
 
     void increaseBufferPointer();
 
-    void endString();
-
-    void endArray();
-
-    void startValue(char c);
-
-    void startKey();
-
-    void processEscapeCharacters(char c);
-
-    boolean isDigit(char c);
-
-    boolean isHexCharacter(char c);
-
-    char convertCodepointToCharacter(int num);
-
-    void endUnicodeCharacter(int codepoint);
-
-    void startNumber(char c);
-
-    void startString();
-
-    void startObject();
-
-    void startArray();
-
-    void endNull();
-
-    void endFalse();
-
-    void endTrue();
+    void push(int value);
+    int pop();
+    int peek();
 
     void endDocument();
 
-    int convertDecimalBufferToInt(char myArray[], int length);
+    void startKey();
 
-    void endNumber();
-
-    void endUnicodeSurrogateInterstitial();
-
-    boolean doesCharArrayContain(char myArray[], int length, char c);
-
-    int getHexArrayAsDecimal(char hexArray[], int length);
-
-    void processUnicodeCharacter(char c);
-
+    void startObject();
     void endObject();
 
+    void startArray();
+    void endArray();
+
+    void startValue(char c);
+    void endNull();
+    void endFalse();
+    void endTrue();
+    void endUnicodeCharacter(int codepoint);
+    void endUnicodeSurrogateInterstitial();
+
+    void startString();
+    void endString();
+
+    void startNumber(char c);
+    void endNumber();
+
+    void processUnicodeCharacter(char c);
+    void processEscapeCharacters(char c);
+
+    boolean isDigit(char c);
+    boolean isHexCharacter(char c);
+    boolean doesCharArrayContain(char myArray[], int length, char c);
+
+    char convertCodepointToCharacter(int num);
+    int convertDecimalBufferToInt(char myArray[], int length);
+    int getHexArrayAsDecimal(char hexArray[], int length);
 
 
   public:
