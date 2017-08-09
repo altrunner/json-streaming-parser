@@ -25,8 +25,15 @@ See more at http://blog.squix.ch and https://github.com/squix78/json-streaming-p
 
 #pragma once
 
+#ifdef ARDUINO
 #include <Arduino.h>
+#else
+#include "MockArduino.h"
+#endif
 #include "JsonListener.h"
+
+/** Define this to enable verbose erroring. You may not want this on flash-constrained platforms */
+#define USE_LONG_ERRORS 1
 
 #define STATE_START_DOCUMENT     0
 #define STATE_DONE               -1
@@ -74,6 +81,8 @@ class JsonStreamingParser {
     int characterCounter = 0;
 
     int unicodeHighSurrogate = 0;
+
+    char errorMessage[128];
 
     void increaseBufferPointer();
 
@@ -129,7 +138,7 @@ class JsonStreamingParser {
 
   public:
     JsonStreamingParser();
-    void parse(char c);
+    bool parse(char c);
     void setListener(JsonListener* listener);
     void reset();
 };

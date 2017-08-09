@@ -25,6 +25,56 @@ See more at http://blog.squix.ch and https://github.com/squix78/json-streaming-p
 
 #include "JsonStreamingParser.h"
 
+#ifdef USE_LONG_ERRORS
+const char PROGMEM_ERR0[] PROGMEM = "Unescaped control character encountered: %c at position: %d";
+const char PROGMEM_ERR1[] PROGMEM = "Start of string expected for object key. Instead got: %c at position: %d";
+const char PROGMEM_ERR2[] PROGMEM = "Expected ':' after key. Instead got %c at position %d";
+const char PROGMEM_ERR3[] PROGMEM = "Expected ',' or '}' while parsing object. Got: %c at position %d";
+const char PROGMEM_ERR4[] PROGMEM = "Expected ',' or ']' while parsing array. Got: %c at position: %d";
+const char PROGMEM_ERR5[] PROGMEM = "Finished a literal, but unclear what state to move to. Last state: %d";
+const char PROGMEM_ERR6[] PROGMEM = "Cannot have multiple decimal points in a number at: %d";
+const char PROGMEM_ERR7[] PROGMEM = "Cannot have a decimal point in an exponent at: %d";
+const char PROGMEM_ERR8[] PROGMEM = "Cannot have multiple exponents in a number at: %d";
+const char PROGMEM_ERR9[] PROGMEM = "Can only have '+' or '-' after the 'e' or 'E' in a number at: %d";
+const char PROGMEM_ERR10[] PROGMEM = "Document must start with object or array";
+const char PROGMEM_ERR11[] PROGMEM = "Expected end of document";
+const char PROGMEM_ERR12[] PROGMEM = "Internal error. Reached an unknown state at: %d";
+const char PROGMEM_ERR13[] PROGMEM = "Unexpected end of string";
+const char PROGMEM_ERR14[] PROGMEM = "Unexpected character for value";
+const char PROGMEM_ERR15[] PROGMEM = "Unexpected end of array encountered";
+const char PROGMEM_ERR16[] PROGMEM = "Unexpected end of object encountered";
+const char PROGMEM_ERR17[] PROGMEM = "Expected escaped character after backslash";
+const char PROGMEM_ERR18[] PROGMEM = "Expected hex character for escaped Unicode character";
+const char PROGMEM_ERR19[] PROGMEM = "Expected '\\u' following a Unicode high surrogate";
+const char PROGMEM_ERR20[] PROGMEM = "Expected 'true'";
+const char PROGMEM_ERR21[] PROGMEM = "Expected 'false'";
+const char PROGMEM_ERR22[] PROGMEM = "Expected 'null'";
+#else
+const char PROGMEM_ERR0[] PROGMEM = "err0: %c at: %d";
+const char PROGMEM_ERR1[] PROGMEM = "err1: %c at: %d";
+const char PROGMEM_ERR2[] PROGMEM = "err2: %c at: %d";
+const char PROGMEM_ERR3[] PROGMEM = "err3: %c at: %d";
+const char PROGMEM_ERR4[] PROGMEM = "err4: %c at: %d";
+const char PROGMEM_ERR5[] PROGMEM = "err5: %d";
+const char PROGMEM_ERR6[] PROGMEM = "err6: at: %d";
+const char PROGMEM_ERR7[] PROGMEM = "err7: at: %d";
+const char PROGMEM_ERR8[] PROGMEM = "err8: at: %d";
+const char PROGMEM_ERR9[] PROGMEM = "err9: at: %d";
+const char PROGMEM_ERR10[] PROGMEM = "err10";
+const char PROGMEM_ERR11[] PROGMEM = "err11";
+const char PROGMEM_ERR12[] PROGMEM = "err12: %d";
+const char PROGMEM_ERR13[] PROGMEM = "err13";
+const char PROGMEM_ERR14[] PROGMEM = "err14";
+const char PROGMEM_ERR15[] PROGMEM = "err15";
+const char PROGMEM_ERR16[] PROGMEM = "err16";
+const char PROGMEM_ERR17[] PROGMEM = "err17";
+const char PROGMEM_ERR18[] PROGMEM = "err18";
+const char PROGMEM_ERR19[] PROGMEM = "err19";
+const char PROGMEM_ERR20[] PROGMEM = "err20";
+const char PROGMEM_ERR21[] PROGMEM = "err21";
+const char PROGMEM_ERR22[] PROGMEM = "err22";
+#endif
+
 JsonStreamingParser::JsonStreamingParser() {
     reset();
 }
@@ -36,22 +86,24 @@ void JsonStreamingParser::reset() {
     unicodeBufferPos = 0;
     characterCounter = 0;
 }
-
+    
 void JsonStreamingParser::setListener(JsonListener* listener) {
   myListener = listener;
 }
 
-void JsonStreamingParser::parse(char c) {
+bool JsonStreamingParser::parse(char c) {
     //System.out.print(c);
     // valid whitespace characters in JSON (from RFC4627 for JSON) include:
     // space, horizontal tab, line feed or new line, and carriage return.
     // thanks:
     // http://stackoverflow.com/questions/16042274/definition-of-whitespace-in-json
+
     if ((c == ' ' || c == '\t' || c == '\n' || c == '\r')
         && !(state == STATE_IN_STRING || state == STATE_UNICODE || state == STATE_START_ESCAPE
             || state == STATE_IN_NUMBER || state == STATE_START_DOCUMENT)) {
-      return;
+      return true;
     }
+
     switch (state) {
     case STATE_IN_STRING:
       if (c == '"') {
@@ -59,7 +111,9 @@ void JsonStreamingParser::parse(char c) {
       } else if (c == '\\') {
         state = STATE_START_ESCAPE;
       } else if ((c < 0x1f) || (c == 0x7f)) {
-        //throw new RuntimeException("Unescaped control character encountered: " + c + " at position" + characterCounter);
+        sprintf_P( errorMessage, PROGMEM_ERR0, c, characterCounter );
+        myListener->error( errorMessage );
+        return false;
       } else {
         buffer[bufferPos] = c;
         increaseBufferPointer();
@@ -78,12 +132,16 @@ void JsonStreamingParser::parse(char c) {
       } else if (c == '"') {
         startKey();
       } else {
-        //throw new RuntimeException("Start of string expected for object key. Instead got: " + c + " at position" + characterCounter);
+        sprintf_P( errorMessage, PROGMEM_ERR1, c, characterCounter );
+        myListener->error( errorMessage );
+        return false;
       }
       break;
     case STATE_END_KEY:
       if (c != ':') {
-        //throw new RuntimeException("Expected ':' after key. Instead got " + c + " at position" + characterCounter);
+        sprintf_P( errorMessage, PROGMEM_ERR2, c, characterCounter );
+        myListener->error( errorMessage );
+        return false;
       }
       state = STATE_AFTER_KEY;
       break;
@@ -112,7 +170,9 @@ void JsonStreamingParser::parse(char c) {
         } else if (c == ',') {
           state = STATE_IN_OBJECT;
         } else {
-          //throw new RuntimeException("Expected ',' or '}' while parsing object. Got: " + c + ". " + characterCounter);
+          sprintf_P( errorMessage, PROGMEM_ERR3, c, characterCounter );
+          myListener->error( errorMessage );
+          return false;
         }
       } else if (within == STACK_ARRAY) {
         if (c == ']') {
@@ -120,11 +180,14 @@ void JsonStreamingParser::parse(char c) {
         } else if (c == ',') {
           state = STATE_IN_ARRAY;
         } else {
-          //throw new RuntimeException("Expected ',' or ']' while parsing array. Got: " + c + ". " + characterCounter);
-
+          sprintf_P( errorMessage, PROGMEM_ERR4, c, characterCounter );
+          myListener->error( errorMessage );
+          return false;
         }
       } else {
-        //throw new RuntimeException("Finished a literal, but unclear what state to move to. Last state: " + characterCounter);
+          sprintf_P( errorMessage, PROGMEM_ERR5, characterCounter );
+          myListener->error( errorMessage );
+          return false;
       }
     }break;
     case STATE_IN_NUMBER:
@@ -133,22 +196,30 @@ void JsonStreamingParser::parse(char c) {
         increaseBufferPointer();
       } else if (c == '.') {
         if (doesCharArrayContain(buffer, bufferPos, '.')) {
-          //throw new RuntimeException("Cannot have multiple decimal points in a number. " + characterCounter);
+          sprintf_P( errorMessage, PROGMEM_ERR6, characterCounter );
+          myListener->error( errorMessage );
+          return false;
         } else if (doesCharArrayContain(buffer, bufferPos, 'e')) {
-          //throw new RuntimeException("Cannot have a decimal point in an exponent." + characterCounter);
+          sprintf_P( errorMessage, PROGMEM_ERR7, characterCounter );
+          myListener->error( errorMessage );
+          return false;
         }
         buffer[bufferPos] = c;
         increaseBufferPointer();
       } else if (c == 'e' || c == 'E') {
         if (doesCharArrayContain(buffer, bufferPos, 'e')) {
-          //throw new RuntimeException("Cannot have multiple exponents in a number. " + characterCounter);
+          sprintf_P( errorMessage, PROGMEM_ERR8, characterCounter );
+          myListener->error( errorMessage );
+          return false;
         }
         buffer[bufferPos] = c;
         increaseBufferPointer();
       } else if (c == '+' || c == '-') {
         char last = buffer[bufferPos - 1];
         if (!(last == 'e' || last == 'E')) {
-          //throw new RuntimeException("Can only have '+' or '-' after the 'e' or 'E' in a number." + characterCounter);
+          sprintf_P( errorMessage, PROGMEM_ERR9, characterCounter );
+          myListener->error( errorMessage );
+          return false;
         }
         buffer[bufferPos] = c;
         increaseBufferPointer();
@@ -179,27 +250,35 @@ void JsonStreamingParser::parse(char c) {
         endNull();
       }
       break;
-    case STATE_START_DOCUMENT:
+    case STATE_START_DOCUMENT: {
       myListener->startDocument();
       if (c == '[') {
         startArray();
       } else if (c == '{') {
         startObject();
       } else {
-        // throw new ParsingError($this->_line_number,
-        // $this->_char_number,
-        // "Document must start with object or array.");
+          sprintf_P( errorMessage, PROGMEM_ERR10 );
+          myListener->error( errorMessage );
+          return false;        
       }
       break;
-    //case STATE_DONE:
-      // throw new ParsingError($this->_line_number, $this->_char_number,
-      // "Expected end of document.");
-    //default:
-      // throw new ParsingError($this->_line_number, $this->_char_number,
-      // "Internal error. Reached an unknown state: ".$this->_state);
     }
-    characterCounter++;
+    case STATE_DONE: {
+          sprintf_P( errorMessage, PROGMEM_ERR11 );
+          myListener->error( errorMessage );
+          return false;
+    }
+    default: {
+      sprintf_P( errorMessage, PROGMEM_ERR12, characterCounter );
+      myListener->error( errorMessage );
+      return false;      
+    }
   }
+
+    characterCounter++;
+
+    return true;
+}
 
 void JsonStreamingParser::increaseBufferPointer() {
   bufferPos = min(bufferPos + 1, BUFFER_MAX_LENGTH - 1);
@@ -210,15 +289,16 @@ void JsonStreamingParser::endString() {
     stackPos--;
     if (popped == STACK_KEY) {
       buffer[bufferPos] = '\0';
-      myListener->key(String(buffer));
+      myListener->key(buffer);
       state = STATE_END_KEY;
     } else if (popped == STACK_STRING) {
       buffer[bufferPos] = '\0';
-      myListener->value(String(buffer));
+      myListener->value(buffer);
       state = STATE_AFTER_VALUE;
     } else {
-      // throw new ParsingError($this->_line_number, $this->_char_number,
-      // "Unexpected end of string.");
+          sprintf_P( errorMessage, PROGMEM_ERR13 );
+          myListener->error( errorMessage );
+          return;       
     }
     bufferPos = 0;
   }
@@ -244,8 +324,9 @@ void JsonStreamingParser::startValue(char c) {
       buffer[bufferPos] = c;
       increaseBufferPointer();
     } else {
-      // throw new ParsingError($this->_line_number, $this->_char_number,
-      // "Unexpected character for value: ".$c);
+          sprintf_P( errorMessage, PROGMEM_ERR14 );
+          myListener->error( errorMessage );
+          return;    
     }
   }
 
@@ -258,8 +339,9 @@ void JsonStreamingParser::endArray() {
     int popped = stack[stackPos - 1];
     stackPos--;
     if (popped != STACK_ARRAY) {
-      // throw new ParsingError($this->_line_number, $this->_char_number,
-      // "Unexpected end of array encountered.");
+          sprintf_P( errorMessage, PROGMEM_ERR15 );
+          myListener->error( errorMessage );
+          return;
     }
     myListener->endArray();
     state = STATE_AFTER_VALUE;
@@ -278,8 +360,9 @@ void JsonStreamingParser::endObject() {
     int popped = stack[stackPos];
     stackPos--;
     if (popped != STACK_OBJECT) {
-      // throw new ParsingError($this->_line_number, $this->_char_number,
-      // "Unexpected end of object encountered.");
+          sprintf_P( errorMessage, PROGMEM_ERR16 );
+          myListener->error( errorMessage );
+          return;
     }
     myListener->endObject();
     state = STATE_AFTER_VALUE;
@@ -316,8 +399,9 @@ void JsonStreamingParser::processEscapeCharacters(char c) {
     } else if (c == 'u') {
       state = STATE_UNICODE;
     } else {
-      // throw new ParsingError($this->_line_number, $this->_char_number,
-      // "Expected escaped character after backslash. Got: ".$c);
+          sprintf_P( errorMessage, PROGMEM_ERR17 );
+          myListener->error( errorMessage );
+          return;      
     }
     if (state != STATE_UNICODE) {
       state = STATE_IN_STRING;
@@ -326,9 +410,9 @@ void JsonStreamingParser::processEscapeCharacters(char c) {
 
 void JsonStreamingParser::processUnicodeCharacter(char c) {
     if (!isHexCharacter(c)) {
-      // throw new ParsingError($this->_line_number, $this->_char_number,
-      // "Expected hex character for escaped Unicode character. Unicode parsed: "
-      // . implode($this->_unicode_buffer) . " and got: ".$c);
+          sprintf_P( errorMessage, PROGMEM_ERR18 );
+          myListener->error( errorMessage );
+          return;      
     }
 
     unicodeBuffer[unicodeBufferPos] = c;
@@ -393,9 +477,9 @@ boolean JsonStreamingParser::doesCharArrayContain(char myArray[], int length, ch
 void JsonStreamingParser::endUnicodeSurrogateInterstitial() {
     char unicodeEscape = unicodeEscapeBuffer[unicodeEscapeBufferPos - 1];
     if (unicodeEscape != 'u') {
-      // throw new ParsingError($this->_line_number, $this->_char_number,
-      // "Expected '\\u' following a Unicode high surrogate. Got: " .
-      // $unicode_escape);
+          sprintf_P( errorMessage, PROGMEM_ERR19 );
+          myListener->error( errorMessage );
+          return;          
     }
     unicodeBufferPos = 0;
     unicodeEscapeBufferPos = 0;
@@ -404,15 +488,7 @@ void JsonStreamingParser::endUnicodeSurrogateInterstitial() {
 
 void JsonStreamingParser::endNumber() {
     buffer[bufferPos] = '\0';
-    String value = String(buffer);
-    //float result = 0.0;
-    //if (doesCharArrayContain(buffer, bufferPos, '.')) {
-    //  result = value.toFloat();
-    //} else {
-      // needed special treatment in php, maybe not in Java and c
-    //  result = value.toFloat();
-    //}
-    myListener->value(value.c_str());
+    myListener->value(buffer);
     bufferPos = 0;
     state = STATE_AFTER_VALUE;
   }
@@ -433,12 +509,13 @@ void JsonStreamingParser::endDocument() {
 
 void JsonStreamingParser::endTrue() {
     buffer[bufferPos] = '\0';
-    String value = String(buffer);
-    if (value.equals("true")) {
+    // String value = String(buffer);
+    if (strncmp(buffer, "true", 4) == 0) {
       myListener->value("true");
     } else {
-      // throw new ParsingError($this->_line_number, $this->_char_number,
-      // "Expected 'true'. Got: ".$true);
+          sprintf_P( errorMessage, PROGMEM_ERR20 );
+          myListener->error( errorMessage );
+          return;              
     }
     bufferPos = 0;
     state = STATE_AFTER_VALUE;
@@ -446,12 +523,13 @@ void JsonStreamingParser::endTrue() {
 
 void JsonStreamingParser::endFalse() {
     buffer[bufferPos] = '\0';
-    String value = String(buffer);
-    if (value.equals("false")) {
+    // String value = String(buffer);
+    if (strncmp(buffer, "false",5) == 0 ) {
       myListener->value("false");
     } else {
-      // throw new ParsingError($this->_line_number, $this->_char_number,
-      // "Expected 'true'. Got: ".$true);
+          sprintf_P( errorMessage, PROGMEM_ERR21 );
+          myListener->error( errorMessage );
+          return;              
     }
     bufferPos = 0;
     state = STATE_AFTER_VALUE;
@@ -459,12 +537,13 @@ void JsonStreamingParser::endFalse() {
 
 void JsonStreamingParser::endNull() {
     buffer[bufferPos] = '\0';
-    String value = String(buffer);
-    if (value.equals("null")) {
+    // String value = String(buffer);
+    if (strncmp(buffer, "null", 4) == 0) {
       myListener->value("null");
     } else {
-      // throw new ParsingError($this->_line_number, $this->_char_number,
-      // "Expected 'true'. Got: ".$true);
+          sprintf_P( errorMessage, PROGMEM_ERR22 );
+          myListener->error( errorMessage );
+          return;              
     }
     bufferPos = 0;
     state = STATE_AFTER_VALUE;

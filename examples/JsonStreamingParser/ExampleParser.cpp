@@ -10,12 +10,14 @@ void ExampleListener::startDocument() {
   Serial.println("start document");
 }
 
-void ExampleListener::key(String key) {
-  Serial.println("key: " + key);
+void ExampleListener::key(const char *key) {
+  Serial.print("key: ");
+  Serial.println(key);
 }
 
-void ExampleListener::value(String value) {
-  Serial.println("value: " + value);
+void ExampleListener::value(const char *value) {
+  Serial.print("value: ");
+  Serial.print(value);
 }
 
 void ExampleListener::endArray() {

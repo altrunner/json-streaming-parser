@@ -39,13 +39,14 @@ stream whatever you are interested in. In order to do that you will create a sub
 implement methods which will be notified in case of certain events in the feed occure. Available events are:
 
  * startDocument()
- * key(String key)
- * value(String value)
+ * key(const char *key)
+ * value(const char *value)
  * endArray()
  * endObject()
  * endDocument()
  * startArray()
  * startObject()
+ * error(const char *message)
 
 In your implementation of these methods you will have to write problem specific code to find the parts of the document that you are interested in. Please see the example to understand what that means. In the example the ExampleListener implements the event methods declared in the JsonListener interface and prints to the serial console when they are called.
 

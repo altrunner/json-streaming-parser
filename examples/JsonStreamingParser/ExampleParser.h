@@ -9,9 +9,9 @@ class ExampleListener: public JsonListener {
   
     virtual void startDocument();
 
-    virtual void key(String key);
+    virtual void key(const char *key);
 
-    virtual void value(String value);
+    virtual void value(const char *value);
 
     virtual void endArray();
 
