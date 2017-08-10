@@ -95,26 +95,26 @@ class JsonStreamingParser {
     void startKey();
 
     void startObject();
-    void endObject();
+    boolean endObject();
 
     void startArray();
-    void endArray();
+    boolean endArray();
 
-    void startValue(char c);
-    void endNull();
-    void endFalse();
-    void endTrue();
+    boolean startValue(char c);
+    boolean endNull();
+    boolean endFalse();
+    boolean endTrue();
     void endUnicodeCharacter(int codepoint);
-    void endUnicodeSurrogateInterstitial();
+    boolean endUnicodeSurrogateInterstitial();
 
     void startString();
-    void endString();
+    boolean endString();
 
     void startNumber(char c);
     void endNumber();
 
-    void processUnicodeCharacter(char c);
-    void processEscapeCharacters(char c);
+    boolean processUnicodeCharacter(char c);
+    boolean processEscapeCharacters(char c);
 
     boolean isDigit(char c);
     boolean isHexCharacter(char c);
