@@ -40,3 +40,7 @@ void ExampleListener::startObject() {
    Serial.println("start object. ");
 }
 
+void ExampleListener::error( const char *message ) {
+  Serial.print("message: ");
+  Serial.print(message);
+}
