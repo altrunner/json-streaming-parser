@@ -1,3 +1,11 @@
+This is a fork of the altrunner version of the original library. altrunner converted the library to use char arrays instrad of String types. This has the potential to save memory resources.
+
+This fork here has an updated example which has been corrected to work with a previous library update which added error reporting.
+
+The plan is to add a better example in the future that show how to use the parser.
+
+The original ReadMe is below.
+
 # json-streaming-parser
 Arduino library for parsing potentially huge json streams on devices with scarce memory.
 
