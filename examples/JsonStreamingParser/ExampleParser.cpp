@@ -7,7 +7,7 @@ void ExampleListener::whitespace(char c) {
 }
 
 void ExampleListener::startDocument() {
-  Serial.println("start document");
+  Serial.println("\nstart document");
 }
 
 void ExampleListener::key(const char *key) {
@@ -17,7 +17,7 @@ void ExampleListener::key(const char *key) {
 
 void ExampleListener::value(const char *value) {
   Serial.print("value: ");
-  Serial.print(value);
+  Serial.println(value);
 }
 
 void ExampleListener::endArray() {
@@ -40,3 +40,7 @@ void ExampleListener::startObject() {
    Serial.println("start object. ");
 }
 
+void ExampleListener::error( const char *message ) {
+  Serial.print("\nError message: ");
+  Serial.println(message);
+}

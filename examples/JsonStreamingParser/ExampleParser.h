@@ -22,4 +22,6 @@ class ExampleListener: public JsonListener {
     virtual void startArray();
 
     virtual void startObject();
+
+    virtual void error( const char *message );
 };
